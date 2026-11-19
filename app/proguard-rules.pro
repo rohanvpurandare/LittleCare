@@ -1,0 +1,2 @@
+-keep class com.littlecare.babytracker.data.** { *; }
+-keep class com.littlecare.babytracker.export.** { *; }
