@@ -11,16 +11,20 @@ android {
 
     defaultConfig {
         applicationId = "com.littlecare.babytracker"
-        minSdk = 26
+        minSdk = 24
         targetSdk = 35
-        versionCode = 2
-        versionName = "2.0"
+        versionCode = 3
+        versionName = "3.0.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary = true
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -31,6 +35,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -40,29 +45,41 @@ android {
     buildFeatures {
         compose = true
     }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2025.01.00")
-    implementation(composeBom)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.3")
 
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
-    implementation("androidx.activity:activity-compose:1.10.0")
+    implementation("androidx.activity:activity-compose:1.9.3")
 
-    // Compose UI & Material 3
+    implementation(platform("androidx.compose:compose-bom:2024.11.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
 
-    // Room Local Database
-    val roomVersion = "2.6.1"
-    implementation("androidx.room:room-runtime:$roomVersion")
-    implementation("androidx.room:room-ktx:$roomVersion")
-    ksp("androidx.room:room-compiler:$roomVersion")
+    implementation("androidx.navigation:navigation-compose:2.8.4")
+
+    // Room Database (Local-first offline storage)
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
 
     // DataStore Preferences
-    implementation("androidx.datastore:datastore-preferences:1.1.2")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Biometric lock support
+    implementation("androidx.biometric:biometric:1.1.0")
+
+    debugImplementation("androidx.compose.ui:ui-tooling")
 }
