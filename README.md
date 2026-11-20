@@ -1,14 +1,24 @@
-# LittleCare v3 — Complete Local-First & Caregiver-Ready Baby Tracker
+# LittleCare v3.0.0 (`com.littlecare.babytracker`)
 
-Built with **Jetpack Compose**, **Room Database**, **DataStore**, **AndroidX Biometric**, and **MediaRecorder / AudioTrack** for offline-first reliability and zero-clutter usability during late-night care.
+Minimalist, offline-first Android baby tracker built with **Jetpack Compose**, **Room Database**, and **Material 3** (Pure OLED Black + Low-Glare Red-Amber Night Vision mode).
 
-## Features Included in v3
-- **Sleep & Wake Window Timer + Predictive Nap "Sweet Spot"**: Start/stop nap and night-sleep sessions, track live wake windows, compute rolling sleep averages, and highlight the predicted next nap sweet-spot window.
-- **Medication & Symptom Log with Double-Dose Safety Timer**: Log fever temperatures (°C / °F), symptoms, and medication doses with countdown lockouts/warnings before the minimum safe interval elapses.
-- **Multi-Baby & Twin Support + Caregiver Sync Queue**: Track multiple children or twins independently, plus manage caregiver roles (Partner, Grandparent, Nanny) with offline-first queuing and instant sync when connected.
-- **Developmental Milestones & Play Guides**: Age-bucketed checklists with simple daily play activities.
-- **"Firsts" Memory Vault with Voice Notes & Photos**: Capture first smile, first solid food, first word, and custom firsts with audio voice recordings and photos.
-- **Interactive Teething Chart**: Tap baby teeth on an interactive upper/lower arch chart to log eruption dates and symptoms (drooling, fussiness, swollen gums, chewing).
-- **Photo-a-Day Timeline & 1st-Year Time-Lapse Preview**: Attach daily growth/memory photos and preview an auto-paced 1st-year slideshow/time-lapse sequence.
-- **App Lock (PIN + Biometrics), Low-Glare Night Mode & Dark/Light Theme**: Protect records with SHA-256 PIN and biometrics, toggle low-glare red/amber night mode for 3:00 AM sessions, and switch between dark and light themes.
-- **Full Edit & Delete Controls + Baby/Poop/Vaccine Photos**: Edit baby registration details anytime, delete individual entries or profiles, wipe all data, and attach photos to profiles, diaper logs, and vaccines.
+## What's Included in v3.0.0
+- **Updated Layered Adaptive App Icon (`ic_launcher` & `ic_launcher_round`)**: Midnight-indigo halo background with a warm golden crescent, ivory heart cradle, and sky-blue starlight accents (`mipmap-anydpi-v26` + `mipmap-xhdpi` fallback + Android 13+ monochrome support).
+- **1-Tap Care Logging & Live Session Timer**: Breast (Left/Right) & Sleep live timers, Bottle volume logger (Breastmilk / Formula), Wet/Dirty diaper quick-logs, and Medication/Temperature log.
+- **Weekly 1st-Year Growth Tracker (Weeks 0–52)**: Weight (kg) and Length/Height (cm) plotted directly against **WHO Child Growth Standards (50th percentile)** for Boys and Girls.
+- **Indian Immunization Schedule (MoHFW / IAP)**: Auto-calculated vaccination due dates from birth date (At Birth, 6w, 10w, 14w, 6m, 9m, 12m, 16–18m) with completion tracking and overdue alerts.
+- **Multi-Baby Support, Milestones & Pediatric Export**: Switch between multiple profiles, track 1st-year milestones, enable optional Biometric/PIN lock, and share a complete CSV health summary.
+- **GitHub Actions CI (`.github/workflows/build-apk.yml`)**: Automatically builds and uploads `app-debug.apk` on every push to `main`.
+
+## How to Update GitHub & Build the APK
+1. Extract this zip and copy its contents over your repository folder (or push directly as a fresh repo).
+2. Commit and push to GitHub:
+   ```bash
+   git add -A
+   git commit -m "Update LittleCare to v3.0.0 with new adaptive icon and full feature set"
+   git push origin main
+   ```
+3. **Build APK**:
+   - **On GitHub**: Open the **Actions** tab in your repository → select **Build LittleCare APK** → download the `LittleCare-v3.0.0-debug-apk` artifact.
+   - **Locally in Android Studio**: Open the folder → **Build → Build Bundle(s) / APK(s) → Build APK(s)**.
+   - **Uninstall old build first** (or install v3.0.0 `versionCode 3` over it) so your Android launcher refreshes the cached app icon.
