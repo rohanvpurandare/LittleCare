@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Warm golden-amber crescent cradling the center safe zone -->
+    <path
+        android:fillColor="#F6C87A"
+        android:pathData="M58.5,33.5 A21,21 0 1,0 58.5,74.5 A16.5,16.5 0 1,1 58.5,33.5 Z" />
+
+    <!-- Soft warm-ivory heart nestled beside the crescent -->
+    <path
+        android:fillColor="#FFF7EA"
+        android:pathData="M62.5,58.8 C62.5,58.8 54.5,53.4 54.5,48.1 C54.5,45.3 56.7,43.3 59.3,43.3 C60.9,43.3 62.0,44.1 62.5,45.1 C63.0,44.1 64.1,43.3 65.7,43.3 C68.3,43.3 70.5,45.3 70.5,48.1 C70.5,53.4 62.5,58.8 62.5,58.8 Z" />
+
+    <!-- Primary sky-blue starlight sparkle -->
+    <path
+        android:fillColor="#7DD3FC"
+        android:pathData="M71.5,34.5 L72.9,38.1 L76.5,39.5 L72.9,40.9 L71.5,44.5 L70.1,40.9 L66.5,39.5 L70.1,38.1 Z" />
+
+    <!-- Secondary subtle star accent -->
+    <path
+        android:fillColor="#BAE6FD"
+        android:pathData="M68.5,63.5 L69.3,65.5 L71.3,66.3 L69.3,67.1 L68.5,69.1 L67.7,67.1 L65.7,66.3 L67.7,65.5 Z" />
+</vector>
