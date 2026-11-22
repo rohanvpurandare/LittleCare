@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.map
 
 private val Context.dataStore by preferencesDataStore(name = "baby_profile_prefs")
 
-data class BabyProfile(
+data class BabyProfilePref(
     val isSetupComplete: Boolean = false,
     val name: String = "",
     val birthDateEpochDay: Long = 0L,
@@ -26,8 +26,8 @@ class BabyPreferences(private val context: Context) {
         val BIRTH_TIME_TEXT = stringPreferencesKey("birth_time_text")
     }
 
-    val babyProfileFlow: Flow<BabyProfile> = context.dataStore.data.map { prefs ->
-        BabyProfile(
+    val babyProfileFlow: Flow<BabyProfilePref> = context.dataStore.data.map { prefs ->
+        BabyProfilePref(
             isSetupComplete = prefs[Keys.IS_SETUP_COMPLETE] ?: false,
             name = prefs[Keys.NAME] ?: "",
             birthDateEpochDay = prefs[Keys.BIRTH_DATE_EPOCH_DAY] ?: 0L,
