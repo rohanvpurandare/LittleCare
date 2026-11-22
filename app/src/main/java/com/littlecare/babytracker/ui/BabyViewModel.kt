@@ -8,7 +8,7 @@ import com.littlecare.babytracker.data.ActivityDao
 import com.littlecare.babytracker.data.ActivityLog
 import com.littlecare.babytracker.data.ActivityType
 import com.littlecare.babytracker.data.BabyPreferences
-import com.littlecare.babytracker.data.BabyProfile
+import com.littlecare.babytracker.data.BabyProfilePref
 import com.littlecare.babytracker.data.FeedSubType
 import com.littlecare.babytracker.data.GrowthDao
 import com.littlecare.babytracker.data.GrowthEntry
@@ -35,186 +35,218 @@ class BabyViewModel(
     private val vaccineDao: VaccineDao
 ) : ViewModel() {
 
-    val babyProfile: StateFlow<BabyProfile?> = preferences.babyProfileFlow
+    val babyProfile: StateFlow<BabyProfilePref?> = preferences.babyProfileFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    private val startOfTodayMillis: Long
-        get() = LocalDate.now()
-            .atStartOfDay(ZoneId.systemDefault())
-            .toInstant()
-            .toEpochMilli()
+    private val _selectedDate = MutableStateFlow(LocalDate.now())
+    val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
-    val todayLogs: StateFlow<List<ActivityLog>> = activityDao.getLogsSince(startOfTodayMillis)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _logsForSelectedDate = MutableStateFlow<List<ActivityLog>>(emptyList())
+    val logsForSelectedDate: StateFlow<List<ActivityLog>> = _logsForSelectedDate.asStateFlow()
 
-    val recentLogs: StateFlow<List<ActivityLog>> = activityDao.getRecentLogs()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _allGrowthEntries = MutableStateFlow<List<GrowthEntry>>(emptyList())
+    val allGrowthEntries: StateFlow<List<GrowthEntry>> = _allGrowthEntries.asStateFlow()
 
-    val growthEntries: StateFlow<List<GrowthEntry>> = growthDao.getAllGrowthEntries()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _allVaccineRecords = MutableStateFlow<List<VaccineRecord>>(emptyList())
+    val allVaccineRecords: StateFlow<List<VaccineRecord>> = _allVaccineRecords.asStateFlow()
 
-    val vaccineRecords: StateFlow<List<VaccineRecord>> = vaccineDao.getAllVaccines()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _exportResult = MutableStateFlow<ExportResult?>(null)
+    val exportResult: StateFlow<ExportResult?> = _exportResult.asStateFlow()
 
-    private val _isExporting = MutableStateFlow(false)
-    val isExporting: StateFlow<Boolean> = _isExporting.asStateFlow()
-
-    private val _lastExportResult = MutableStateFlow<ExportResult?>(null)
-    val lastExportResult: StateFlow<ExportResult?> = _lastExportResult.asStateFlow()
-
-    fun clearExportResult() {
-        _lastExportResult.value = null
+    init {
+        loadLogsForDate(_selectedDate.value)
+        loadGrowthEntries()
+        loadVaccineRecords()
     }
 
-    fun completeOnboarding(
-        name: String,
-        birthDateEpochDay: Long,
-        birthTimeText: String,
-        birthWeightKg: Float? = null,
-        birthHeightCm: Float? = null
-    ) {
+    fun selectDate(date: LocalDate) {
+        _selectedDate.value = date
+        loadLogsForDate(date)
+    }
+
+    private fun loadLogsForDate(date: LocalDate) {
+        viewModelScope.launch {
+            val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val endOfDay = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli() - 1
+            activityDao.getLogsBetween(startOfDay, endOfDay).collect { logs ->
+                _logsForSelectedDate.value = logs
+            }
+        }
+    }
+
+    private fun loadGrowthEntries() {
+        viewModelScope.launch {
+            growthDao.getAllEntries().collect { entries ->
+                _allGrowthEntries.value = entries
+            }
+        }
+    }
+
+    private fun loadVaccineRecords() {
+        viewModelScope.launch {
+            vaccineDao.getAllRecords().collect { records ->
+                _allVaccineRecords.value = records
+            }
+        }
+    }
+
+    fun saveProfile(name: String, birthDateEpochDay: Long, birthTimeText: String) {
         viewModelScope.launch {
             preferences.saveBabyProfile(name, birthDateEpochDay, birthTimeText)
-            val initialVaccines = IndianVaccineSchedule.buildScheduleForBirthDate(birthDateEpochDay)
-            vaccineDao.insertAll(initialVaccines)
-            if (birthWeightKg != null || birthHeightCm != null) {
-                growthDao.insertGrowthEntry(
-                    GrowthEntry(
-                        weekNumber = 0,
-                        recordedDateEpochDay = birthDateEpochDay,
-                        weightKg = birthWeightKg,
-                        heightCm = birthHeightCm
+        }
+    }
+
+    fun logFeeding(
+        type: FeedSubType,
+        amountMl: Float? = null,
+        durationMinutes: Int? = null,
+        breastSide: String? = null,
+        foodDescription: String? = null,
+        notes: String = ""
+    ) {
+        viewModelScope.launch {
+            activityDao.insert(
+                ActivityLog(
+                    timestamp = System.currentTimeMillis(),
+                    type = ActivityType.FEEDING,
+                    feedSubType = type,
+                    amountMl = amountMl,
+                    durationMinutes = durationMinutes,
+                    breastSide = breastSide,
+                    foodDescription = foodDescription,
+                    notes = notes
+                )
+            )
+        }
+    }
+
+    fun logDiaper(
+        isWet: Boolean,
+        isDirty: Boolean,
+        poopColor: String? = null,
+        poopConsistency: PoopConsistency? = null,
+        notes: String = ""
+    ) {
+        viewModelScope.launch {
+            activityDao.insert(
+                ActivityLog(
+                    timestamp = System.currentTimeMillis(),
+                    type = ActivityType.DIAPER,
+                    isWet = isWet,
+                    isDirty = isDirty,
+                    poopColor = poopColor,
+                    poopConsistency = poopConsistency,
+                    notes = notes
+                )
+            )
+        }
+    }
+
+    fun logSleep(durationMinutes: Int, notes: String = "") {
+        viewModelScope.launch {
+            activityDao.insert(
+                ActivityLog(
+                    timestamp = System.currentTimeMillis(),
+                    type = ActivityType.SLEEP,
+                    durationMinutes = durationMinutes,
+                    notes = notes
+                )
+            )
+        }
+    }
+
+    fun logTummyTime(durationMinutes: Int, notes: String = "") {
+        viewModelScope.launch {
+            activityDao.insert(
+                ActivityLog(
+                    timestamp = System.currentTimeMillis(),
+                    type = ActivityType.TUMMY_TIME,
+                    durationMinutes = durationMinutes,
+                    notes = notes
+                )
+            )
+        }
+    }
+
+    fun deleteLog(log: ActivityLog) {
+        viewModelScope.launch {
+            activityDao.delete(log)
+        }
+    }
+
+    fun addGrowthEntry(dateEpochDay: Long, weightKg: Float, heightCm: Float, headCircumferenceCm: Float? = null, notes: String = "") {
+        viewModelScope.launch {
+            growthDao.insert(
+                GrowthEntry(
+                    dateEpochDay = dateEpochDay,
+                    weightKg = weightKg,
+                    heightCm = heightCm,
+                    headCircumferenceCm = headCircumferenceCm,
+                    notes = notes
+                )
+            )
+        }
+    }
+
+    fun toggleVaccineDone(vaccineName: String, isDone: Boolean) {
+        viewModelScope.launch {
+            val existing = vaccineDao.getRecordForVaccine(vaccineName)
+            if (existing != null) {
+                vaccineDao.update(existing.copy(isDone = isDone, dateAdministeredEpochDay = if (isDone) LocalDate.now().toEpochDay() else null))
+            } else {
+                vaccineDao.insert(
+                    VaccineRecord(
+                        vaccineName = vaccineName,
+                        isDone = isDone,
+                        dateAdministeredEpochDay = if (isDone) LocalDate.now().toEpochDay() else null
                     )
                 )
             }
         }
     }
 
-    fun logPeeInstant(onLogged: (ActivityLog) -> Unit = {}) {
+    fun exportPdfReport(context: Context) {
         viewModelScope.launch {
-            val log = ActivityLog(
-                type = ActivityType.PEE.name,
-                timestampMillis = System.currentTimeMillis()
-            )
-            val id = activityDao.insertLog(log)
-            onLogged(log.copy(id = id))
+            val profile = babyProfile.value
+            val logs = logsForSelectedDate.value
+            val growth = allGrowthEntries.value
+            val vaccines = allVaccineRecords.value
+            _exportResult.value = ReportExporter.exportPdf(context, profile, logs, growth, vaccines)
         }
     }
 
-    fun logPoop(consistency: PoopConsistency, note: String, timestampMillis: Long = System.currentTimeMillis()) {
+    fun exportCsvReport(context: Context) {
         viewModelScope.launch {
-            activityDao.insertLog(
-                ActivityLog(
-                    type = ActivityType.POOP.name,
-                    timestampMillis = timestampMillis,
-                    subType = consistency.label,
-                    note = note.trim()
-                )
-            )
+            val logs = activityDao.getAllLogsSync()
+            _exportResult.value = ReportExporter.exportCsv(context, logs)
         }
     }
 
-    fun logFeed(feedType: FeedSubType, durationMinutes: Int, startTimeMillis: Long = System.currentTimeMillis()) {
+    fun clearExportResult() {
+        _exportResult.value = null
+    }
+
+    fun clearAllData() {
         viewModelScope.launch {
-            activityDao.insertLog(
-                ActivityLog(
-                    type = ActivityType.FEED.name,
-                    timestampMillis = startTimeMillis,
-                    durationMinutes = durationMinutes.coerceAtLeast(1),
-                    subType = feedType.label
-                )
-            )
+            preferences.clear()
+            activityDao.deleteAll()
+            growthDao.deleteAll()
+            vaccineDao.deleteAll()
         }
     }
+}
 
-    fun deleteActivityLog(log: ActivityLog) {
-        viewModelScope.launch {
-            activityDao.deleteLog(log)
-        }
-    }
-
-    fun addGrowthEntry(weekNumber: Int, weightKg: Float?, heightCm: Float?) {
-        if (weightKg == null && heightCm == null) return
-        viewModelScope.launch {
-            growthDao.insertGrowthEntry(
-                GrowthEntry(
-                    weekNumber = weekNumber.coerceIn(0, 52),
-                    recordedDateEpochDay = LocalDate.now().toEpochDay(),
-                    weightKg = weightKg,
-                    heightCm = heightCm
-                )
-            )
-        }
-    }
-
-    fun deleteGrowthEntry(entry: GrowthEntry) {
-        viewModelScope.launch {
-            growthDao.deleteGrowthEntry(entry)
-        }
-    }
-
-    fun toggleVaccineAdministered(code: String, isAdministered: Boolean, administeredEpochDay: Long?) {
-        viewModelScope.launch {
-            vaccineDao.updateVaccineStatus(code, isAdministered, administeredEpochDay)
-        }
-    }
-
-    fun exportToExcel(context: Context, profile: BabyProfile) {
-        if (_isExporting.value) return
-        viewModelScope.launch {
-            _isExporting.value = true
-            try {
-                val allLogs = activityDao.getAllLogsSnapshot()
-                val res = ReportExporter.exportExcelWorkbook(
-                    context = context,
-                    profile = profile,
-                    logs = allLogs,
-                    growthEntries = growthEntries.value,
-                    vaccines = vaccineRecords.value
-                )
-                _lastExportResult.value = res
-            } finally {
-                _isExporting.value = false
-            }
-        }
-    }
-
-    fun exportToPdf(context: Context, profile: BabyProfile) {
-        if (_isExporting.value) return
-        viewModelScope.launch {
-            _isExporting.value = true
-            try {
-                val allLogs = activityDao.getAllLogsSnapshot()
-                val res = ReportExporter.exportPdfReport(
-                    context = context,
-                    profile = profile,
-                    logs = allLogs,
-                    growthEntries = growthEntries.value,
-                    vaccines = vaccineRecords.value
-                )
-                _lastExportResult.value = res
-            } finally {
-                _isExporting.value = false
-            }
-        }
-    }
-
-    fun calculateBabyAgeWeeks(birthDateEpochDay: Long): Int {
-        if (birthDateEpochDay <= 0L) return 0
-        val dob = LocalDate.ofEpochDay(birthDateEpochDay)
-        val days = ChronoUnit.DAYS.between(dob, LocalDate.now()).coerceAtLeast(0)
-        return (days / 7).toInt().coerceAtMost(52)
-    }
-
-    class Factory(
-        private val preferences: BabyPreferences,
-        private val activityDao: ActivityDao,
-        private val growthDao: GrowthDao,
-        private val vaccineDao: VaccineDao
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+class BabyViewModelFactory(
+    private val preferences: BabyPreferences,
+    private val activityDao: ActivityDao,
+    private val growthDao: GrowthDao,
+    private val vaccineDao: VaccineDao
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(BabyViewModel::class.java)) {
             return BabyViewModel(preferences, activityDao, growthDao, vaccineDao) as T
         }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
